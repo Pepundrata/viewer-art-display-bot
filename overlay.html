@@ -1,75 +1,79 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Viewer Art Overlay</title>
-  <style>
-    body {
-      margin: 0;
-      background: transparent;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .art-container {
-      display: flex;
-      gap: 20px;
-      max-width: 100vw;
-      max-height: 100vh;
-    }
-    .art-container img {
-      max-height: 90vh;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.6);
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Viewer Art Overlay</title>
+<style>
+  body, html {
+    margin: 0; padding: 0; background: transparent; overflow: hidden;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh;
+  }
+  #image-container {
+    position: relative;
+    width: 80vw;
+    height: 80vh;
+  }
+  #image-container img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+  #image-container img.active {
+    opacity: 1;
+  }
+</style>
 </head>
 <body>
-  <div class="art-container" id="art"></div>
+  <div id="image-container"></div>
 
-  <script>
-    const IMAGE_COUNT = 3; // change to show more/less
-    const MODE = "random"; // "latest" or "random" or "loop"
-    let currentIndex = 0;
-    let images = [];
-
-    async function loadImages() {
+<script>
+  async function loadImages() {
+    try {
       const res = await fetch('/images.json');
-      images = await res.json();
-      updateDisplay();
+      const images = await res.json();
+      return images;
+    } catch (e) {
+      console.error('Failed to load images.json', e);
+      return [];
     }
+  }
 
-    function updateDisplay() {
-      const container = document.getElementById("art");
-      container.innerHTML = "";
+  function createImageElements(images) {
+    const container = document.getElementById('image-container');
+    images.forEach((imgData, i) => {
+      const img = document.createElement('img');
+      img.src = imgData.url;
+      if(i === 0) img.classList.add('active');
+      container.appendChild(img);
+    });
+  }
 
-      let toShow = [];
-      if (MODE === "latest") {
-        toShow = images.slice(-IMAGE_COUNT);
-      } else if (MODE === "random") {
-        for (let i = 0; i < IMAGE_COUNT; i++) {
-          const random = images[Math.floor(Math.random() * images.length)];
-          toShow.push(random);
-        }
-      } else if (MODE === "loop") {
-        toShow = images.slice(currentIndex, currentIndex + IMAGE_COUNT);
-        currentIndex = (currentIndex + 1) % images.length;
-      }
-
-      toShow.forEach((img) => {
-        const el = document.createElement("img");
-        el.src = img.url;
-        container.appendChild(el);
-      });
-    }
-
-    loadImages();
+  function startSlideshow() {
+    const imgs = document.querySelectorAll('#image-container img');
+    let current = 0;
     setInterval(() => {
-      if (MODE === "loop") updateDisplay();
-    }, 5000); // loop interval
-    setInterval(loadImages, 15000); // refresh image list every 15 sec
-  </script>
+      imgs[current].classList.remove('active');
+      current = (current + 1) % imgs.length;
+      imgs[current].classList.add('active');
+    }, 10000); // every 10 sec
+  }
+
+  async function init() {
+    const images = await loadImages();
+    if(images.length === 0) {
+      document.body.innerHTML = "<p style='color:white; text-align:center;'>No images found</p>";
+      return;
+    }
+    createImageElements(images);
+    startSlideshow();
+  }
+
+  init();
+</script>
 </body>
 </html>
