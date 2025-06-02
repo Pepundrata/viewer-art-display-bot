@@ -96,3 +96,6 @@ app.listen(PORT, () => {
   console.log(`🌐 Public URL: ${replUrl}`);
   console.log(`📦 Endpoint:   ${replUrl}/images.json`);
 });
+app.get("/overlay", (req, res) => {
+  res.sendFile(path.join(__dirname, "overlay.html"));
+});
